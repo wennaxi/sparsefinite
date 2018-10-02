@@ -1,3 +1,5 @@
+
+###Example Code from Online
 # summary statistics of sample
 n    <- 30
 ybar <- 15
@@ -21,7 +23,7 @@ hist(tau)
 
 
 
-
+###My Actual Code Starts Here
 for(i in 2:11000) {  
   #a
   for (k in 1:K) {
