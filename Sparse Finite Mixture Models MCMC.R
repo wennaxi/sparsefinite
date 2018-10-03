@@ -24,10 +24,10 @@ nu = matrix(NA, nrow = niter, ncol = K)
 eta = matrix(NA, nrow = niter, ncol = K)
 e0 = rep(NA, niter)
 ae = 1
-be = 100
+be = 10
 #Initial Values
 theta[1, ] = rep(.5, K)
-S[1, ] = c(sample(1:K, N.sum, replace = T, prob = rep(1 / K, K)))
+S[1, ] = c(sample(1:K, N.sum, replace = T))
 for (k in 1:K) {
   N[1, k] = sum(S[1, ] == k)
 }
@@ -47,7 +47,7 @@ y[601:800] = rbinom(n = 200, size = 1, p = .7)
 y[801:1000] = rbinom(n = 200, size = 1, p = .9)
 
 
-###My Actual Code Starts Here
+###MCMC
 for(i in 2:niter) {  
   #a
   for (k in 1:K) {
@@ -74,16 +74,20 @@ for(i in 2:niter) {
     N[i, k] = sum(S[i, ] == k) #update N[[i]]
   }
   #d
-  f = function(e0_value) {
-    partition_conditional = gamma(K * e0_value) / gamma(N.sum + K * e0_value) * prod(gamma(N[i, ] + e0_value) / gamma(e0_value))
-    e0_prior = e0_value^(ae - 1) * exp(-be * e0_value)
-    return(partition_conditional * e0_prior)
-  }
   e0.proposed = rnorm(n = 1, mean = e0[i - 1], sd = 1)
   if (e0.proposed <= 0) {
     e0[i] = e0[i - 1]
   } else {
-    alpha = f(e0.proposed) / f(e0[i - 1])
+    log_f = function(e0_value) {
+      # partition_conditional = gamma(K * e0_value) / gamma(N.sum + K * e0_value) * prod(gamma(N[i, ] + e0_value) / gamma(e0_value))
+      # e0_prior = e0_value^(ae - 1) * exp(-be * e0_value)
+      # return(partition_conditional * e0_prior)
+      log_partition_conditional = lgamma(K * e0_value) - lgamma(N.sum + K * e0_value) + sum(lgamma(N[i, ] + e0_value) - lgamma(e0_value))
+      log_e0_prior = (ae - 1) * log(e0_value) - be * e0_value
+      return(log_partition_conditional + log_e0_prior)
+    }
+    #alpha = f(e0.proposed) / f(e0[i - 1])
+    alpha = exp(log_f(e0.proposed) - log_f(e0[i - 1]))
     u = runif(n = 1, min = 0, max = 1)
     e0[i] = ifelse(u <= alpha, e0.proposed, e0[i - 1])
   }
@@ -123,8 +127,12 @@ for (k in 1:K) {
 
 
 colMeans(theta)
-colMeans(S)
+#colMeans(S)
 colMeans(N)
 colMeans(nu)
 colMeans(eta)
 mean(e0)
+
+
+dim(N)
+N[9901:10000, ]
